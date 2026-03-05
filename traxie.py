@@ -10,9 +10,15 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for the Cyber/AI Aesthetic
+# Custom CSS for the Cyber/AI Aesthetic & PWA App UI
 st.markdown("""
 <style>
+    /* Hides Streamlit Top Menu to look like a Native App */
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    .block-container { padding-top: 1rem; padding-bottom: 0rem; }
+
     /* Theme: Deep Purple & Neon Blue */
     .stApp { background-color: #090014; color: #E0E0E0; }
     
@@ -61,19 +67,17 @@ class TraxieEngine:
         if not self.valid: return "Error: Invalid API Key"
         try:
             completion = self.client.chat.completions.create(
-                model="meta-llama/llama-4-maverick-17b-128e-instruct", # Smarter model for chat
+                model="llama-3.3-70b-versatile", # Upgraded to fastest/smartest model
                 messages=messages,
-                temperature=0.7
+                temperature=0.7,
+                max_tokens=1024
             )
             return completion.choices[0].message.content
         except Exception as e:
             return f"Error: {e}"
 
     def trace_content(self, text):
-        """
-        The Forensic Tracer. 
-        Analyzes Perplexity and Burstiness patterns typical of AI.
-        """
+        """The Forensic Tracer."""
         if not self.valid: return "Error: Invalid API Key"
         
         system_prompt = (
@@ -88,22 +92,20 @@ class TraxieEngine:
         
         try:
             completion = self.client.chat.completions.create(
-                model="llama3-70b-8192",
+                model="llama-3.3-70b-versatile",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"ANALYZE THIS TEXT:\n{text}"}
                 ],
-                temperature=0.1 # Low temp for analytical precision
+                temperature=0.1,
+                max_tokens=1024
             )
             return completion.choices[0].message.content
         except Exception as e:
             return f"Error: {e}"
 
     def humanize_content(self, text):
-        """
-        The Humanizer.
-        Rewrites text to increase Burstiness and perplexity.
-        """
+        """The Humanizer."""
         if not self.valid: return "Error: Invalid API Key"
         
         system_prompt = (
@@ -123,7 +125,8 @@ class TraxieEngine:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"HUMANIZE THIS:\n{text}"}
                 ],
-                temperature=0.9 # High temp for creativity/randomness
+                temperature=0.9, # High temp for creativity/randomness
+                max_tokens=1024
             )
             return completion.choices[0].message.content
         except Exception as e:
@@ -140,18 +143,16 @@ with st.sidebar:
     st.title("🧬 Traxie")
     st.caption("Kybic Family | Sunverse Corp")
     
-    # GROQ KEY INPUT
-    api_key = st.text_input("Groq API Key", type="password", help="Get from console.groq.com")
-    
     st.markdown("---")
     st.info("**Capabilities:**\n\n🕵️ **Trace:** Detect AI Text\n✨ **Humanize:** Bypass Detectors\n💬 **Chat:** Intelligent Assist")
 
     # ADMIN BACKDOOR
     with st.expander("System Access"):
-        if st.text_input("Key", type="password") == "bossmode":
-            st.success("Admin Active")
+        boss_pass = st.secrets.get("BOSSMODE_PASSWORD", "bossmode")
+        if st.text_input("Key", type="password") == boss_pass:
+            st.success("Admin Active: Welcome, Valen Sol.")
             st.metric("System Status", "ONLINE")
-            st.metric("Model", "Llama3-70b (Groq LPU)")
+            st.metric("Core Engine", "Llama-3.3-70B Versatile")
 
 # --- 5. MAIN INTERFACE ---
 st.title("Traxie AI Suite")
@@ -163,14 +164,17 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# Fetch API Key invisibly from Streamlit Secrets
+api_key = st.secrets.get("GROQ_API_KEY", None)
+
 if not api_key:
-    st.warning("⚠️ Please enter Groq API Key in the sidebar.")
+    st.error("⚠️ System Offline: Groq API Key is missing from Streamlit Secrets.")
     st.stop()
 
 engine = TraxieEngine(api_key)
 
 # TABS
-tab_chat, tab_trace, tab_human = st.tabs(["💬 Chat", "🕵️ Tracer (Detector)", "✨ Humanizer"])
+tab_chat, tab_trace, tab_human = st.tabs(["💬 Chat", "🕵️ Tracer", "✨ Humanizer"])
 
 # --- TAB 1: CHAT ---
 with tab_chat:
@@ -196,7 +200,7 @@ with tab_trace:
     st.subheader("AI Content Detector")
     st.caption("Paste text to analyze if it was written by ChatGPT, Claude, or Gemini.")
     
-    trace_text = st.text_area("Input Text", height=200, placeholder="Paste suspicious text here...")
+    trace_text = st.text_area("Input Text", height=200, placeholder="Paste suspicious text here...", key="trace_input")
     
     if st.button("Trace Origin"):
         if not trace_text:
@@ -211,7 +215,7 @@ with tab_human:
     st.subheader("Style Transfer (Humanizer)")
     st.caption("Rewrite robotic AI text to sound natural and bypass detectors.")
     
-    human_text = st.text_area("Paste AI Text", height=200, placeholder="Paste robotic text here...")
+    human_text = st.text_area("Paste AI Text", height=200, placeholder="Paste robotic text here...", key="human_input")
     
     if st.button("Humanize"):
         if not human_text:
