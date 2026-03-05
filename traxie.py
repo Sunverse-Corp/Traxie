@@ -61,7 +61,7 @@ class TraxieEngine:
         if not self.valid: return "Error: Invalid API Key"
         try:
             completion = self.client.chat.completions.create(
-                model="llama3-70b-8192", # Smarter model for chat
+                model="meta-llama/llama-4-maverick-17b-128e-instruct", # Smarter model for chat
                 messages=messages,
                 temperature=0.7
             )
